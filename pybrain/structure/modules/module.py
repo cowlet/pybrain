@@ -1,6 +1,6 @@
 __author__ = 'Daan Wierstra and Tom Schaul'
 
-from scipy import append, zeros
+from scipy import append, zeros, random
 
 from pybrain.utilities import abstractMethod, Named
 
@@ -30,7 +30,7 @@ class Module(Named):
 
     bufferlist = None
 
-    def __init__(self, indim, outdim, name=None, **args):
+    def __init__(self, indim, outdim, name=None, dropout=False, **args):
         """Create a Module with an input dimension of indim and an output
         dimension of outdim."""
         self.setArgs(name=name, **args)
@@ -49,6 +49,8 @@ class Module(Named):
         self.outdim = outdim
         # Those buffers are 2D arrays (time, dim)
         self._resetBuffers()
+
+        self.dropout = dropout
 
     def _resetBuffers(self, length=1):
         """Reset buffers to a length (in time dimension) of 1."""
@@ -73,6 +75,10 @@ class Module(Named):
         """Produce the output from the input."""
         self._forwardImplementation(self.inputbuffer[self.offset],
                                     self.outputbuffer[self.offset])
+        if self.dropout:
+            # update the list of units to drop
+            self.dropped = random.randint(0, 2, self.outdim)
+            self.outputbuffer[self.offset] *= self.dropped
 
     def backward(self):
         """Produce the input error from the output error."""
@@ -80,6 +86,9 @@ class Module(Named):
                                      self.inputerror[self.offset],
                                      self.outputbuffer[self.offset],
                                      self.inputbuffer[self.offset])
+        if self.dropout:
+            self.outputerror[self.offset] *= self.dropped
+            self.inputerror[self.offset] *= self.dropped
 
     def reset(self):
         """Set all buffers, past and present, to zero."""
@@ -129,6 +138,12 @@ class Module(Named):
         self.outputerror[self.offset] = outerr
         self.backward()
         return self.inputerror[self.offset].copy()
+
+    def calcOuterr(self, target, offset):
+        outerr = target - self.outputbuffer[offset]
+        if self.dropout:
+            return outerr * self.dropped
+        return outerr
 
     def _forwardImplementation(self, inbuf, outbuf):
         """Actual forward transformation function. To be overwritten in

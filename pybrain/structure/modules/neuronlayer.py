@@ -9,9 +9,9 @@ class NeuronLayer(Module):
     # Number of neurons
     dim = 0
 
-    def __init__(self, dim, name=None):
+    def __init__(self, dim, name=None, dropout=False):
         """Create a layer with dim number of units."""
-        Module.__init__(self, dim, dim, name=name)
+        Module.__init__(self, dim, dim, name=name, dropout=dropout)
         self.setArgs(dim=dim)
 
     def whichNeuron(self, inputIndex=None, outputIndex=None):

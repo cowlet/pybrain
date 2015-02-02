@@ -33,7 +33,10 @@ def buildNetwork(*layers, **options):
     otherwise a :class:`FeedForwardNetwork`.
 
     If the `fast` flag is set, faster arac networks will be used instead of the
-    pybrain implementations."""
+    pybrain implementations.
+    
+    If the `dropout` flag is set, randomly drop out units in the hidden layers
+    during training."""
     # options
     opt = {'bias': True,
            'hiddenclass': SigmoidLayer,
@@ -42,6 +45,7 @@ def buildNetwork(*layers, **options):
            'peepholes': False,
            'recurrent': False,
            'fast': False,
+           'dropout': False,
     }
     for key in options:
         if key not in list(opt.keys()):
@@ -81,9 +85,9 @@ def buildNetwork(*layers, **options):
     for i, num in enumerate(layers[1:-1]):
         layername = 'hidden%i' % i
         if issubclass(opt['hiddenclass'], LSTMLayer):
-            n.addModule(opt['hiddenclass'](num, peepholes=opt['peepholes'], name=layername))
+            n.addModule(opt['hiddenclass'](num, peepholes=opt['peepholes'], name=layername, dropout=opt['dropout']))
         else:
-            n.addModule(opt['hiddenclass'](num, name=layername))
+            n.addModule(opt['hiddenclass'](num, name=layername, dropout=opt['dropout']))
         if opt['bias']:
             # also connect all the layers with the bias
             n.addConnection(FullConnection(n['bias'], n[layername]))
